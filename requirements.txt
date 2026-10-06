@@ -14,3 +14,5 @@ joblib>=1.3
 prometheus-client>=0.20
 sentry-sdk>=2.0
 # optional: pip install boto3   (only when STORAGE_BACKEND=s3)
+
+matplotlib>=3.8,<4
