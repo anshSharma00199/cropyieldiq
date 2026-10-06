@@ -48,18 +48,23 @@ def _bootstrap_admin():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     setup_logging(settings.log_level)
-    Base.metadata.create_all(engine)  # use Alembic migrations once the schema starts changing
+    Base.metadata.create_all(engine)
+
+    # Load crop recommendation model.
     try:
         fetch_artifacts()
         state.model_service.load(settings.model_path, settings.model_card_path)
     except Exception:
-        log.exception("model failed to load; /health/ready will report not_ready")
-        notify("critical", "Model failed to load at startup", dedupe_key="model-load")
+        log.exception("crop model failed to load; /health/ready will report not_ready")
+        notify("critical", "Crop model failed to load at startup", dedupe_key="model-load")
+
+    # Load yield forecasting model.
     try:
-        version = state.yield_service.load()
-        log.info("yield model loaded", extra={"model_version": version})
+        state.yield_service.load()
+        log.info("yield model loaded", extra={"model_version": state.yield_service.bundle["version"]})
     except Exception:
-        log.exception("yield model failed to load; yield endpoint will report not_ready")
+        log.exception("yield model failed to load")
+        notify("critical", "Yield model failed to load at startup", dedupe_key="yield-model-load")
 
     _bootstrap_admin()
     yield
