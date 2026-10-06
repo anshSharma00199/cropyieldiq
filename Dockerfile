@@ -5,9 +5,14 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 COPY app app
 COPY ml ml
+COPY src src
+COPY config config
 COPY data data
-# Bake a reproducible model into the image (fixed seed). With STORAGE_BACKEND=s3 it is replaced at start-up.
+
+# Bake reproducible models into the image.
 RUN python ml/train.py --out models
+RUN python -m src.validation
+
 RUN useradd --system --uid 10001 appuser && chown -R appuser /srv
 USER appuser
 EXPOSE 8000
