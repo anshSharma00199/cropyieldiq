@@ -1,0 +1,20 @@
+{
+  "uncalibrated": {
+    "top1_accuracy": 0.9977272727272727,
+    "top3_accuracy": 1.0,
+    "log_loss": 0.08007752919168377,
+    "ece": 0.06688958333333322
+  },
+  "calibrated": {
+    "top1_accuracy": 0.9977272727272727,
+    "top3_accuracy": 1.0,
+    "log_loss": 0.12457454118359759,
+    "ece": 0.11091437440955944
+  },
+  "conformal": {
+    "target_coverage": 0.9,
+    "qhat": 0.21802380952380973,
+    "empirical_coverage": 0.9977272727272727,
+    "average_set_size": 1.0
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "source": "Simple screening thresholds for a 7-day Open-Meteo forecast. Not crop-stage specific and not a warning service.",
+  "heat_stress_tmax_c": 38.0,
+  "heat_stress_days": 2,
+  "heavy_rain_daily_mm": 50.0,
+  "dry_spell_days": 5,
+  "dry_spell_max_daily_mm": 2.0
+}

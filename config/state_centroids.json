@@ -1,0 +1,25 @@
+{
+  "source": "Approximate geographic centroids of Indian states for Open-Meteo queries. Not official survey coordinates.",
+  "states": {
+    "Andhra Pradesh": {"lat": 15.91, "lon": 79.74},
+    "Assam": {"lat": 26.20, "lon": 92.94},
+    "Bihar": {"lat": 25.10, "lon": 85.31},
+    "Chhattisgarh": {"lat": 21.28, "lon": 81.87},
+    "Gujarat": {"lat": 22.26, "lon": 71.19},
+    "Haryana": {"lat": 29.06, "lon": 76.09},
+    "Himachal Pradesh": {"lat": 31.10, "lon": 77.17},
+    "Jharkhand": {"lat": 23.61, "lon": 85.28},
+    "Karnataka": {"lat": 15.32, "lon": 75.71},
+    "Kerala": {"lat": 10.85, "lon": 76.27},
+    "Madhya Pradesh": {"lat": 22.97, "lon": 78.66},
+    "Maharashtra": {"lat": 19.75, "lon": 75.71},
+    "Orissa": {"lat": 20.95, "lon": 85.10},
+    "Punjab": {"lat": 31.15, "lon": 75.34},
+    "Rajasthan": {"lat": 27.02, "lon": 74.22},
+    "Tamil Nadu": {"lat": 11.13, "lon": 78.66},
+    "Telangana": {"lat": 18.11, "lon": 79.02},
+    "Uttar Pradesh": {"lat": 26.85, "lon": 80.95},
+    "Uttarakhand": {"lat": 30.07, "lon": 79.02},
+    "West Bengal": {"lat": 22.99, "lon": 87.86}
+  }
+}

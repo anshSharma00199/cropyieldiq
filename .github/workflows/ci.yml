@@ -1,0 +1,58 @@
+name: CI
+on:
+  push: { branches: [main, develop] }
+  pull_request:
+permissions: { contents: read }
+concurrency: { group: "ci-${{ github.ref }}", cancel-in-progress: true }
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip, cache-dependency-path: "requirements*.txt" }
+      - run: pip install -r requirements-dev.txt
+      - name: Lint
+        run: ruff check .
+      - name: Train model (deterministic, fixed seed)
+        run: python ml/train.py
+      - name: Tests
+        run: pytest --cov=app --cov-report=term-missing --cov-report=xml
+      - uses: actions/upload-artifact@v4
+        with: { name: coverage, path: coverage.xml }
+
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install bandit pip-audit
+      - name: Static security analysis
+        run: bandit -r app -ll
+      - name: Known-vulnerable dependencies
+        run: pip-audit -r requirements.txt
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
+
+  docker:
+    needs: [test, security]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API image
+        run: docker build -t cropyieldiq-api:ci .
+      - name: Scan image
+        uses: aquasecurity/trivy-action@0.24.0
+        with: { image-ref: "cropyieldiq-api:ci", severity: "CRITICAL,HIGH", ignore-unfixed: true, exit-code: "1" }
+      - name: Smoke test the container
+        run: |
+          docker run -d --name api -p 8000:8000 -e APP_ENV=development cropyieldiq-api:ci
+          for i in $(seq 1 30); do curl -fs localhost:8000/health/ready && exit 0; sleep 2; done
+          docker logs api; exit 1

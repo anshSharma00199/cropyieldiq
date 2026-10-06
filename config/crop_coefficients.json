@@ -1,0 +1,15 @@
+{
+  "source": "FAO Irrigation and Drainage Paper 56 (Allen et al., 1998), Table 12 indicative Kc values. Mid-season Kc used for a 7-day window. Not a variety- or location-specific calibration.",
+  "default_kc": 1.05,
+  "crops": {
+    "rice": {"kc_ini": 1.05, "kc_mid": 1.20, "kc_end": 0.90, "root_m": 0.50},
+    "maize": {"kc_ini": 0.30, "kc_mid": 1.20, "kc_end": 0.35, "root_m": 1.00},
+    "chickpea": {"kc_ini": 0.40, "kc_mid": 1.00, "kc_end": 0.35, "root_m": 0.60},
+    "cotton": {"kc_ini": 0.35, "kc_mid": 1.15, "kc_end": 0.70, "root_m": 1.00}
+  },
+  "soil": {
+    "comment": "Medium loam defaults from FAO-56 typical available water ~140 mm/m.",
+    "taw_mm_per_m": 140,
+    "p_depletion": 0.50
+  }
+}

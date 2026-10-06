@@ -1,0 +1,33 @@
+groups:
+  - name: cropyieldiq
+    rules:
+      - alert: ApiDown
+        expr: up{job="api"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations: { summary: "API replica {{ $labels.instance }} is down" }
+      - alert: HighErrorRate
+        expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) > 0.05
+        for: 5m
+        labels: { severity: critical }
+        annotations: { summary: "More than 5% of requests are failing (5xx)" }
+      - alert: SlowRequests
+        expr: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m]))) > 1
+        for: 10m
+        labels: { severity: warning }
+        annotations: { summary: "p95 latency above 1 second" }
+      - alert: LoginFailureSpike
+        expr: sum(rate(auth_events_total{event="login_failed"}[5m])) > 1
+        for: 5m
+        labels: { severity: warning }
+        annotations: { summary: "Many failed logins: possible credential stuffing" }
+      - alert: HeavyRateLimiting
+        expr: sum(rate(rate_limited_total[5m])) > 5
+        for: 5m
+        labels: { severity: warning }
+        annotations: { summary: "Many requests are being rate limited: abuse or too-low limits" }
+      - alert: WeatherProviderFailing
+        expr: sum(rate(weather_errors_total[10m])) > 0.1
+        for: 10m
+        labels: { severity: warning }
+        annotations: { summary: "Open-Meteo calls are failing; live mode returns 503" }

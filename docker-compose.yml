@@ -1,0 +1,84 @@
+# Full stack: nginx (edge) -> api x2 (stateless) -> postgres + redis; plus Prometheus/Alertmanager/Grafana.
+# Start:  cp .env.example .env && edit it, then:  docker compose up -d --build
+# Scale:  docker compose up -d --scale api=4
+name: cropyieldiq
+x-api-env: &api-env
+  env_file: .env
+  restart: unless-stopped
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    ports: ["80:80"]            # add "443:443" and a cert volume when enabling TLS (see docs/DEPLOYMENT.md)
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/proxy_common.conf:/etc/nginx/proxy_common.conf:ro
+    depends_on: [api, frontend]
+    networks: [edge, backend]
+    restart: unless-stopped
+
+  api:
+    <<: *api-env
+    image: ${API_IMAGE:-cropyieldiq-api:local}
+    build: .
+    deploy: { replicas: 2 }
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_started }
+    networks: [backend]
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+
+  frontend:
+    build: { context: ., dockerfile: Dockerfile.frontend }
+    environment: { API_URL: "http://nginx" }
+    networks: [edge]
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: cyiq
+      POSTGRES_USER: cyiq
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U cyiq -d cyiq"], interval: 5s, timeout: 3s, retries: 10 }
+    networks: [backend]
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+    networks: [backend]
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - promdata:/prometheus
+    networks: [backend]
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    volumes: ["./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro"]
+    networks: [backend]
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    environment: { GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_PASSWORD}", GF_USERS_ALLOW_SIGN_UP: "false" }
+    ports: ["127.0.0.1:3000:3000"]   # reachable only from the server itself (use an SSH tunnel)
+    volumes: [grafdata:/var/lib/grafana]
+    networks: [backend]
+    restart: unless-stopped
+
+networks:
+  edge:
+  backend:
+    internal: false   # api needs outbound internet for Open-Meteo; Postgres/Redis publish no ports at all
+
+volumes: { pgdata: {}, promdata: {}, grafdata: {} }

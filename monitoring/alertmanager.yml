@@ -1,0 +1,20 @@
+# Replace the placeholders (Alertmanager does not read env vars). Keep real values out of git.
+route:
+  receiver: team
+  group_by: [alertname]
+  group_wait: 30s
+  repeat_interval: 4h
+receivers:
+  - name: team
+    slack_configs:
+      - api_url: "https://hooks.slack.com/services/REPLACE/ME/PLEASE"
+        channel: "#cropyieldiq-alerts"
+        send_resolved: true
+        title: "{{ .CommonLabels.alertname }} ({{ .Status }})"
+        text: "{{ range .Alerts }}{{ .Annotations.summary }}\n{{ end }}"
+    # email_configs:
+    #   - to: "team@example.com"
+    #     from: "alerts@example.com"
+    #     smarthost: "smtp.example.com:587"
+    #     auth_username: "alerts@example.com"
+    #     auth_password: "REPLACE"

@@ -1,0 +1,29 @@
+[
+  {
+    "protocol": "random",
+    "coverage": 0.8974820143884892,
+    "mean_width": 988.6641445870538,
+    "qhat": 494.33207229352706,
+    "n_train": 1668,
+    "n_cal": 556,
+    "n_test": 556
+  },
+  {
+    "protocol": "temporal",
+    "coverage": 0.8663239074550129,
+    "mean_width": 1285.5537623735506,
+    "qhat": 642.7768811867752,
+    "n_train": 1955,
+    "n_cal": 436,
+    "n_test": 389
+  },
+  {
+    "protocol": "leave_states_out",
+    "coverage": 0.9473684210526315,
+    "mean_width": 1384.321983488313,
+    "qhat": 692.1609917441563,
+    "n_train": 1939,
+    "n_cal": 480,
+    "n_test": 361
+  }
+]

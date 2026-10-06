@@ -1,0 +1,50 @@
+name: CD
+# Deploys after CI succeeds on main (or on a version tag). The "production" environment can require manual approval.
+on:
+  workflow_run: { workflows: [CI], branches: [main], types: [completed] }
+  push: { tags: ["v*.*.*"] }
+permissions: { contents: read, packages: write }
+
+jobs:
+  publish:
+    if: ${{ github.event_name == 'push' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    outputs: { image: "${{ steps.meta.outputs.tags }}" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}" }
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}-api
+          tags: |
+            type=sha,format=short
+            type=semver,pattern={{version}}
+            type=raw,value=latest,enable={{is_default_branch}}
+      - uses: docker/build-push-action@v6
+        with: { context: ".", push: true, tags: "${{ steps.meta.outputs.tags }}", labels: "${{ steps.meta.outputs.labels }}" }
+
+  deploy:
+    needs: publish
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/cropyieldiq
+            export API_IMAGE=ghcr.io/${{ github.repository }}-api:sha-$(echo ${{ github.sha }} | cut -c1-7)
+            sed -i "s|^API_IMAGE=.*|API_IMAGE=$API_IMAGE|" .env
+            docker compose pull api
+            docker compose up -d --remove-orphans      # rolling restart of replicas; nginx re-resolves DNS
+            docker image prune -f
+      - name: Smoke test
+        run: |
+          for i in $(seq 1 20); do curl -fsS https://${{ secrets.DEPLOY_DOMAIN }}/health/ready && exit 0; sleep 3; done
+          echo "Smoke test failed: roll back by re-running this workflow on the previous commit/tag"; exit 1
