@@ -16,3 +16,4 @@ sentry-sdk>=2.0
 # optional: pip install boto3   (only when STORAGE_BACKEND=s3)
 
 matplotlib>=3.8,<4
+xgboost==3.4.1
