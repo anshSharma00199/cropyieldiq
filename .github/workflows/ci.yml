@@ -52,7 +52,7 @@ jobs:
       - name: Build API image
         run: docker build -t cropyieldiq-api:ci .
       - name: Scan image
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@master
         with: { image-ref: "cropyieldiq-api:ci", severity: "CRITICAL,HIGH", ignore-unfixed: true, exit-code: "1" }
       - name: Smoke test the container
         run: |
