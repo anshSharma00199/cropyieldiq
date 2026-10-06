@@ -19,7 +19,8 @@ jobs:
       - name: Train model (deterministic, fixed seed)
         run: python ml/train.py
       - name: Build yield model bundle
-  	 run: python -m src.validation
+        run: python -m src.validation
+
       - name: Tests
         run: pytest --cov=app --cov-report=term-missing --cov-report=xml
       - uses: actions/upload-artifact@v4
