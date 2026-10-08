@@ -7,7 +7,7 @@ import pandas as pd
 import requests
 import streamlit as st
 
-API = os.getenv("API_URL", "http://localhost:8000").rstrip("/") + "/api/v1"
+API = os.getenv("API_URL", "http://127.0.0.1:8000").rstrip("/") + "/api/v1"
 st.set_page_config(page_title="CropYieldIQ", page_icon="🌾", layout="wide")
 
 
@@ -17,8 +17,9 @@ def call(method, path, **kw):
         headers["Authorization"] = f"Bearer {st.session_state['token']}"
     try:
         r = requests.request(method, API + path, headers=headers, timeout=30, **kw)
-    except requests.RequestException:
-        st.error("Cannot reach the server. Please try again shortly.")
+    except requests.RequestException as e:
+        st.error(f"Cannot reach API: {e}")
+        st.caption(f"API URL: {API}")
         return None
     if r.status_code == 429:
         st.warning(f"Too many requests. Try again in {r.headers.get('Retry-After', '60')} seconds.")
@@ -108,7 +109,15 @@ with st.sidebar:
 
 st.title("🌾 CropYieldIQ: Smart Crop Advisory")
 fr = m["feature_range"]
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Manual input", "Live weather", "What-if", "My history", "Yield Forecast", "Crop Planner"])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    "Manual input",
+    "Live weather",
+    "What-if",
+    "My history",
+    "Yield Forecast",
+    "Crop Planner",
+    "Risk Flags"
+])
 with tab1:
     c = st.columns(4)
     vals = {
@@ -357,3 +366,94 @@ with tab6:
 
         st.caption(result["disclaimer"])
         st.caption(f"Model: `{result['model_version']}`")
+
+# ---------- Risk Flags ----------
+with tab7:
+    st.header("⚠️ Risk Flags")
+    st.caption("Agricultural risk assessment based on the current crop, weather and prediction inputs.")
+
+    if "last" not in st.session_state:
+        st.info("Run a crop recommendation first to generate risk flags.")
+    else:
+        result = st.session_state["last"]
+
+        risks = []
+
+        # Get available values
+        rainfall = result.get("rainfall")
+        temperature = result.get("temperature")
+        humidity = result.get("humidity")
+
+        # Rainfall risks
+        if rainfall is not None:
+            if rainfall < 50:
+                risks.append({
+                    "level": "High",
+                    "title": "Low Rainfall",
+                    "message": "Low rainfall may cause water stress and increase irrigation requirements."
+                })
+            elif rainfall > 1000:
+                risks.append({
+                    "level": "High",
+                    "title": "Heavy Rainfall",
+                    "message": "Very high rainfall may increase waterlogging and crop damage risk."
+                })
+
+        # Temperature risks
+        if temperature is not None:
+            if temperature > 40:
+                risks.append({
+                    "level": "High",
+                    "title": "High Temperature",
+                    "message": "High temperature may cause heat stress and reduce crop productivity."
+                })
+            elif temperature < 10:
+                risks.append({
+                    "level": "Moderate",
+                    "title": "Low Temperature",
+                    "message": "Low temperature may slow crop growth."
+                })
+
+        # Humidity risk
+        if humidity is not None and humidity > 90:
+            risks.append({
+                "level": "Moderate",
+                "title": "High Humidity",
+                "message": "High humidity can increase the risk of fungal and disease-related problems."
+            })
+
+        # Yield uncertainty
+        if "interval_lo" in result and "interval_hi" in result:
+            interval_width = result["interval_hi"] - result["interval_lo"]
+
+            if interval_width > 1000:
+                risks.append({
+                    "level": "Moderate",
+                    "title": "High Prediction Uncertainty",
+                    "message": "The predicted yield has a wide uncertainty interval. Treat the forecast cautiously."
+                })
+
+        # Display
+        if not risks:
+            st.success("✅ No major risk flags detected from the available inputs.")
+        else:
+            st.subheader(f"{len(risks)} Risk Flag(s) Detected")
+
+            for risk in risks:
+                if risk["level"] == "High":
+                    st.error(
+                        f"🔴 **{risk['title']} — High Risk**\n\n"
+                        f"{risk['message']}"
+                    )
+                else:
+                    st.warning(
+                        f"🟠 **{risk['title']} — Moderate Risk**\n\n"
+                        f"{risk['message']}"
+                    )
+
+        st.divider()
+
+        st.caption(
+            "Risk flags are decision-support indicators based on available "
+            "input and model information. They are not certified agronomic prescriptions."
+        )
