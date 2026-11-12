@@ -7,7 +7,7 @@ import pandas as pd
 import requests
 import streamlit as st
 
-API = os.getenv("API_URL", "http://127.0.0.1:8000").rstrip("/") + "/api/v1"
+API = os.getenv("API_URL", "https://cropyieldiq.onrender.com").rstrip("/") + "/api/v1"
 st.set_page_config(page_title="CropYieldIQ", page_icon="🌾", layout="wide")
 
 
